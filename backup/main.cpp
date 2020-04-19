@@ -56,7 +56,7 @@ void setup()
 {
   Serial.begin(115200);
 
-  pinMode(BTN_TRIGGER, INPUT_PULLUP);
+  pinMode(BTN_TRIGGER, INPUT);
 
   // Configures the gain and integration time for the TSL2561
   tsl.enableAutoRange(true);                            // Auto-gain ... switches automatically between 1x and 16x
@@ -75,54 +75,18 @@ void setup()
   tsl.setIntegrationTime(TSL2561_INTEGRATIONTIME_13MS); // fast but low resolution
   luxRange();                                           // medir iluminación
 
-// WiFiManager
-  WiFiManager wifiManager;                       // Local intialization.
-  wifiManager.setAPCallback(configModeCallback); // AP Configuration
-  wifiManager.setBreakAfterConfig(true);         // Exit After Config Instead of connecting
-
-  //Reset Settings - If Button Pressed
-  if (digitalRead(BTN_TRIGGER) == LOW)
+  // WiFi
+  WiFi.begin(ssid, pass);
+  while (WiFi.status() != WL_CONNECTED)
   {
-    //Display <Reset>
-    matrixRender("reset", 31);
-    delay(5000);
-
-    wifiManager.resetSettings();
-    //ESP.reset();
-    ESP.restart();
+    delay(500);
+    Serial.print(".");
   }
 
-  // Tries to connect to last known settings or else starts an access point.
-  if (!wifiManager.autoConnect("NTP Clock"))
-  {
-    delay(3000);
-    ESP.reset();
-    delay(5000);
-  }
-
-  delay(3000);
-  {
-    while (WiFi.status() != WL_CONNECTED)
-    {
-      delay(500);
-      Serial.print(".");
-    }
-    Serial.println("");
-
-    // Seed Random With vVlues Unique To This Device
-    uint8_t macAddr[6];
-    WiFi.macAddress(macAddr);
-    uint32_t seed1 =
-        (macAddr[5] << 24) | (macAddr[4] << 16) |
-        (macAddr[3] << 8) | macAddr[2];
-    randomSeed(seed1 + micros());
-    localPort = random(1024, 65535);
-    udp.begin(localPort);
-
-    // NTP config
-    setSyncProvider(getNtpTime);
-    setSyncInterval(5 * 60);
-  }
+  // Ntp time
+  udp.begin(localPort);
+  setSyncProvider(getNtpTime);
+  setSyncInterval(3600);
 
   // timers
   timerDisplayTime = timer.setInterval(1000L, displayTime);
@@ -142,18 +106,11 @@ void setup()
 void loop()
 {
   timer.run();
+}
 
-  if (timeStatus() == timeNotSet)
-  {
-    now();
-    delay(3000);
-    ESP.restart();
-  }
-
-  if (digitalRead(BTN_TRIGGER) == LOW)
-  {
-    ESP.restart();
-  }
+void restart()
+{
+  ESP.restart();
 }
 
 // calle when AP mode and config portal is started
@@ -182,9 +139,4 @@ void luxRange()
   matrix.setIntensity(intensity);
 
   Serial.printf("%d lux -> %d intensity\n", lux, intensity);
-}
-
-void restart()
-{
-  ESP.restart();
 }
