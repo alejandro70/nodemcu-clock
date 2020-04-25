@@ -20,26 +20,8 @@
 #include "display.h"
 #include "ntp.h"
 
-#define BTN_TRIGGER D0 // Activación de Access Point (AP) mode
+#define BTN_TRIGGER D2 // Activación de Access Point (AP) mode
 #define ANALOG_PIN A0  // NodeMCU board ADC pin
-
-const char ssid[] = "Tech_D0003407"; //  your network SSID (name)
-const char pass[] = "Apolo@1969";    // your network password
-
-// AppSettings
-//AppSettings config(SPIFFS);
-
-const int numReadings = 50;
-int readIndex = 0;   // the index of the current reading
-int analogTotal = 0; // the running total
-int lastAnalog = -1; // ultimo valor intensidad
-
-// TSL2561 - Adafruit Flora Light Sensor
-// Connect SCL-D1; SDA-D2 (12345 default ID)
-Adafruit_TSL2561_Unified tsl = Adafruit_TSL2561_Unified(TSL2561_ADDR_FLOAT, 12345);
-bool tslEnabled;
-float luxMin;
-float luxMax;
 
 // timers
 SimpleTimer timer;
@@ -50,7 +32,7 @@ int timerLightSensor;
 // functions
 void configModeCallback(WiFiManager *);
 void restart();
-void luxRange();
+void ldrRange();
 
 void setup()
 {
@@ -58,24 +40,11 @@ void setup()
 
   pinMode(BTN_TRIGGER, INPUT_PULLUP);
 
-  // Configures the gain and integration time for the TSL2561
-  tsl.enableAutoRange(true);                            // Auto-gain ... switches automatically between 1x and 16x
-  tsl.setIntegrationTime(TSL2561_INTEGRATIONTIME_13MS); // fast but low resolution
-  tslEnabled = tsl.begin();
-  sensor_t sensor;
-  tsl.getSensor(&sensor);
-  luxMin = sensor.min_value;
-  luxMax = sensor.max_value;
-
   // Max72xxPanel
   initMatrix();
-  matrixRender("booting", 31);
+  matrixRender("WiFi?", 31);
 
-  /* Changing the integration time gives you better sensor resolution (402ms = 16-bit data) */
-  tsl.setIntegrationTime(TSL2561_INTEGRATIONTIME_13MS); // fast but low resolution
-  luxRange();                                           // medir iluminación
-
-// WiFiManager
+  // WiFiManager
   WiFiManager wifiManager;                       // Local intialization.
   wifiManager.setAPCallback(configModeCallback); // AP Configuration
   wifiManager.setBreakAfterConfig(true);         // Exit After Config Instead of connecting
@@ -83,12 +52,7 @@ void setup()
   //Reset Settings - If Button Pressed
   if (digitalRead(BTN_TRIGGER) == LOW)
   {
-    //Display <Reset>
-    matrixRender("reset", 31);
-    delay(5000);
-
     wifiManager.resetSettings();
-    //ESP.reset();
     ESP.restart();
   }
 
@@ -124,19 +88,16 @@ void setup()
     setSyncInterval(5 * 60);
   }
 
-  // timers
+  // timers (init disabled)
   timerDisplayTime = timer.setInterval(1000L, displayTime);
   timer.disable(timerDisplayTime);
   timerMatrixBanner = timer.setInterval((long)bannerFrecuency, matrixBannerFrame);
   timer.disable(timerMatrixBanner);
   timer.setTimeout(86400000L, restart);
-  if (tslEnabled)
-  {
-    timerLightSensor = timer.setInterval(60000L, luxRange);
-  }
+  timerLightSensor = timer.setInterval(10000L, ldrRange);
 
   // IP banner
-  matrixBanner(7000L, String("IP:") + WiFi.localIP().toString().c_str());
+  matrixBanner(5000L, String("IP:") + WiFi.localIP().toString().c_str());
 }
 
 void loop()
@@ -149,11 +110,6 @@ void loop()
     delay(3000);
     ESP.restart();
   }
-
-  if (digitalRead(BTN_TRIGGER) == LOW)
-  {
-    ESP.restart();
-  }
 }
 
 // calle when AP mode and config portal is started
@@ -161,30 +117,16 @@ void configModeCallback(WiFiManager *myWiFiManager)
 {
 }
 
-// Mide el rango de iluminación
-void luxRange()
-{
-  if (!tslEnabled)
-  {
-    return;
-  }
-
-  // Get a new sensor event
-  sensors_event_t event;
-  tsl.getEvent(&event);
-
-  // Display the results (light is measured in lux)
-  int lux = (int)event.light;
-  lux = lux < luxMax ? lux : luxMax;
-
-  // ajustar intensidad de display
-  int intensity = map(lux, luxMin, luxMax, 0, 15);
-  matrix.setIntensity(intensity);
-
-  Serial.printf("%d lux -> %d intensity\n", lux, intensity);
-}
-
 void restart()
 {
   ESP.restart();
+}
+
+void ldrRange()
+{
+  int sensorValue = analogRead(ANALOG_PIN);
+
+  // ajustar intensidad de display
+  int intensity = map(sensorValue, 0, 1024, 0, 4);
+  matrix.setIntensity(intensity);
 }
