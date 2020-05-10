@@ -23,6 +23,10 @@
 #define BTN_TRIGGER D2 // Activación de Access Point (AP) mode
 #define ANALOG_PIN A0  // NodeMCU board ADC pin
 
+// local variables
+volatile int timer1Seconds = 0;
+bool apModeStarted = false;
+
 // timers
 SimpleTimer timer;
 int timerDisplayTime;
@@ -34,11 +38,35 @@ void configModeCallback(WiFiManager *);
 void restart();
 void ldrRange();
 
+// ISR to Fire when Timer is triggered
+void ICACHE_RAM_ATTR onTimer1()
+{
+  timer1Seconds++;
+  if (timer1Seconds == 20)
+  {
+    timer1Seconds = 0;
+    if (WiFi.status() != WL_CONNECTED && !apModeStarted)
+    {
+      ESP.restart();
+    }
+  }
+
+  // Re-Arm the timer as using TIM_SINGLE
+  timer1_write(312500); //1 s
+}
+
 void setup()
 {
   Serial.begin(115200);
 
   pinMode(BTN_TRIGGER, INPUT_PULLUP);
+
+  {
+    //Initialize NodeMCU Timer1 every 1s
+    timer1_attachInterrupt(onTimer1); // Add ISR Function
+    timer1_enable(TIM_DIV256, TIM_EDGE, TIM_SINGLE);
+    timer1_write(312500); // 312500 / 1 tick per 3.2 us from TIM_DIV256 == 1 s interval
+  }
 
   // Max72xxPanel
   initMatrix();
@@ -59,9 +87,7 @@ void setup()
   // Tries to connect to last known settings or else starts an access point.
   if (!wifiManager.autoConnect("NTP Clock"))
   {
-    delay(3000);
     ESP.reset();
-    delay(5000);
   }
 
   delay(3000);
@@ -112,9 +138,10 @@ void loop()
   }
 }
 
-// calle when AP mode and config portal is started
+// called when AP mode and config portal is started
 void configModeCallback(WiFiManager *myWiFiManager)
 {
+  apModeStarted = true;
 }
 
 void restart()
