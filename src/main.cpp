@@ -45,7 +45,7 @@ void ICACHE_RAM_ATTR onTimer1()
   if (timer1Seconds == 20)
   {
     timer1Seconds = 0;
-    if ((WiFi.status() != WL_CONNECTED || timeStatus() == timeNotSet) && !apModeStarted)
+    if (WiFi.status() != WL_CONNECTED && !apModeStarted)
     {
       ESP.restart();
     }
