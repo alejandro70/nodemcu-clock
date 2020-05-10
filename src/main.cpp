@@ -45,7 +45,7 @@ void ICACHE_RAM_ATTR onTimer1()
   if (timer1Seconds == 20)
   {
     timer1Seconds = 0;
-    if (WiFi.status() != WL_CONNECTED && !apModeStarted)
+    if ((WiFi.status() != WL_CONNECTED || timeStatus() == timeNotSet) && !apModeStarted)
     {
       ESP.restart();
     }
@@ -129,13 +129,6 @@ void setup()
 void loop()
 {
   timer.run();
-
-  if (timeStatus() == timeNotSet)
-  {
-    now();
-    delay(3000);
-    ESP.restart();
-  }
 }
 
 // called when AP mode and config portal is started
