@@ -70,7 +70,7 @@ void setup()
 
   // Max72xxPanel
   initMatrix();
-  matrixRender("WiFi?", 31);
+  matrixRender("Yupi!", 31);
 
   // WiFiManager
   WiFiManager wifiManager;                       // Local intialization.
@@ -134,6 +134,7 @@ void loop()
 // called when AP mode and config portal is started
 void configModeCallback(WiFiManager *myWiFiManager)
 {
+  matrixRender("WiFi?", 31);
   apModeStarted = true;
 }
 
