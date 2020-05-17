@@ -31,7 +31,7 @@ Max72xxPanel matrix = Max72xxPanel(
 // --------------------------------------------------------------------------------
 void initMatrix()
 {
-    matrix.setIntensity(2); // Use a value between 0 and 15 for brightness
+    matrix.setIntensity(0); // Use a value between 0 and 15 for brightness
 
     matrix.setPosition(0, 0, 0); // The first display is at <0, 0>
     matrix.setPosition(1, 1, 0); // The second display is at <1, 0>
@@ -101,12 +101,6 @@ void matrixBanner(unsigned long duration, String text)
 // --------------------------------------------------------------------------------
 void displayTime()
 {
-    if (timeStatus() == timeNotSet)
-    {
-        matrixRender("ERROR", 27);
-        return;
-    }
-
     int hh = hour();
     hh = hh <= 12 ? hh : hh - 12;
     hh = hh != 0 ? hh : 12;

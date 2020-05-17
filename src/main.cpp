@@ -4,17 +4,12 @@
  */
 
 #include <Arduino.h>
-#include <DNSServer.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <TimeLib.h>
-#include <WiFiManager.h> //https://github.com/tzapu/WiFiManager
 #include <WiFiUdp.h>
 #include <SimpleTimer.h>
-#include <ArduinoJson.h>
 #include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_TSL2561_U.h>
 
 #include "global.h"
 #include "display.h"
@@ -23,9 +18,11 @@
 #define BTN_TRIGGER D2 // Activación de Access Point (AP) mode
 #define ANALOG_PIN A0  // NodeMCU board ADC pin
 
+const char ssid[] = "Tech_D0003407"; //  your network SSID (name)
+const char pass[] = "Apolo@1969";    // your network password
+
 // local variables
 volatile int timer1Seconds = 0;
-bool apModeStarted = false;
 
 // timers
 SimpleTimer timer;
@@ -34,7 +31,6 @@ int timerMatrixBanner;
 int timerLightSensor;
 
 // functions
-void configModeCallback(WiFiManager *);
 void restart();
 void ldrRange();
 
@@ -45,7 +41,7 @@ void ICACHE_RAM_ATTR onTimer1()
   if (timer1Seconds == 20)
   {
     timer1Seconds = 0;
-    if (WiFi.status() != WL_CONNECTED && !apModeStarted)
+    if (WiFi.status() != WL_CONNECTED || timeStatus() == timeNotSet)
     {
       ESP.restart();
     }
@@ -70,49 +66,20 @@ void setup()
 
   // Max72xxPanel
   initMatrix();
-  matrixRender("Yupi!", 31);
+  matrixRender("Hola!", 31);
 
-  // WiFiManager
-  WiFiManager wifiManager;                       // Local intialization.
-  wifiManager.setAPCallback(configModeCallback); // AP Configuration
-  wifiManager.setBreakAfterConfig(true);         // Exit After Config Instead of connecting
-
-  //Reset Settings - If Button Pressed
-  if (digitalRead(BTN_TRIGGER) == LOW)
+  // WiFi
+  WiFi.begin(ssid, pass);
+  while (WiFi.status() != WL_CONNECTED)
   {
-    wifiManager.resetSettings();
-    ESP.restart();
+    delay(500);
+    Serial.print(".");
   }
 
-  // Tries to connect to last known settings or else starts an access point.
-  if (!wifiManager.autoConnect("NTP Clock"))
-  {
-    ESP.reset();
-  }
-
-  delay(3000);
-  {
-    while (WiFi.status() != WL_CONNECTED)
-    {
-      delay(500);
-      Serial.print(".");
-    }
-    Serial.println("");
-
-    // Seed Random With vVlues Unique To This Device
-    uint8_t macAddr[6];
-    WiFi.macAddress(macAddr);
-    uint32_t seed1 =
-        (macAddr[5] << 24) | (macAddr[4] << 16) |
-        (macAddr[3] << 8) | macAddr[2];
-    randomSeed(seed1 + micros());
-    localPort = random(1024, 65535);
-    udp.begin(localPort);
-
-    // NTP config
-    setSyncProvider(getNtpTime);
-    setSyncInterval(5 * 60);
-  }
+  // NTP config
+  udp.begin(localPort);
+  setSyncProvider(getNtpTime);
+  setSyncInterval(5 * 60);
 
   // timers (init disabled)
   timerDisplayTime = timer.setInterval(1000L, displayTime);
@@ -129,13 +96,6 @@ void setup()
 void loop()
 {
   timer.run();
-}
-
-// called when AP mode and config portal is started
-void configModeCallback(WiFiManager *myWiFiManager)
-{
-  matrixRender("WiFi?", 31);
-  apModeStarted = true;
 }
 
 void restart()
