@@ -42,8 +42,7 @@ void ICACHE_RAM_ATTR onTimer1()
   {
     timer1Seconds = 0;
     bool offline = WiFi.status() != WL_CONNECTED || timeStatus() == timeNotSet;
-    bool wrongTime = hour() == 0;
-    if (offline && wrongTime)
+    if (offline && millis() < 60000)
     {
       ESP.restart();
     }
