@@ -41,7 +41,9 @@ void ICACHE_RAM_ATTR onTimer1()
   if (timer1Seconds == 20)
   {
     timer1Seconds = 0;
-    if (WiFi.status() != WL_CONNECTED || timeStatus() == timeNotSet)
+    bool offline = WiFi.status() != WL_CONNECTED || timeStatus() == timeNotSet;
+    bool wrongTime = hour() == 0;
+    if (offline && wrongTime)
     {
       ESP.restart();
     }
@@ -90,7 +92,8 @@ void setup()
   timerLightSensor = timer.setInterval(10000L, ldrRange);
 
   // IP banner
-  matrixBanner(5000L, String("IP:") + WiFi.localIP().toString().c_str());
+  // matrixBanner(5000L, String("IP:") + WiFi.localIP().toString().c_str());
+  beginDisplayTime(); // comentar si se activa banner
 }
 
 void loop()
