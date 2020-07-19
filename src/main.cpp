@@ -33,16 +33,18 @@ int timerLightSensor;
 // functions
 void restart();
 void ldrRange();
+void stopInterrupt();
 
 // ISR to Fire when Timer is triggered
 void ICACHE_RAM_ATTR onTimer1()
 {
+  Serial.println("onTimer1");
+
   timer1Seconds++;
   if (timer1Seconds == 20)
   {
     timer1Seconds = 0;
-    bool offline = WiFi.status() != WL_CONNECTED || timeStatus() == timeNotSet;
-    if (offline && millis() < 60000)
+    if (WiFi.status() != WL_CONNECTED || timeStatus() == timeNotSet)
     {
       ESP.restart();
     }
@@ -88,6 +90,7 @@ void setup()
   timerMatrixBanner = timer.setInterval((long)bannerFrecuency, matrixBannerFrame);
   timer.disable(timerMatrixBanner);
   timer.setTimeout(86400000L, restart);
+  timer.setTimeout(60000L, stopInterrupt);
   timerLightSensor = timer.setInterval(10000L, ldrRange);
 
   // IP banner
@@ -112,4 +115,10 @@ void ldrRange()
   // ajustar intensidad de display
   int intensity = map(sensorValue, 0, 1024, 0, 4);
   matrix.setIntensity(intensity);
+}
+
+void stopInterrupt()
+{
+  timer1_detachInterrupt();
+  timer1_disable();
 }
