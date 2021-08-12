@@ -18,8 +18,8 @@
 #define BTN_TRIGGER D2 // Activación de Access Point (AP) mode
 #define ANALOG_PIN A0  // NodeMCU board ADC pin
 
-const char ssid[] = "Tech_D0003407"; //  your network SSID (name)
-const char pass[] = "Apolo@1969";    // your network password
+const char ssid[] = "Jairo Espitia"; //  your network SSID (name)
+const char pass[] = "602950419";    // your network password
 
 // local variables
 volatile int timer1Seconds = 0;
