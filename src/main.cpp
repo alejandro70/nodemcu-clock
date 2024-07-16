@@ -18,7 +18,7 @@
 #define BTN_TRIGGER D2 // Activación de Access Point (AP) mode
 #define ANALOG_PIN A0  // NodeMCU board ADC pin
 
-const char ssid[] = "ESPITIA_ETB"; //  your network SSID (name)
+const char ssid[] = "ESPITIA_ETB5G"; //  your network SSID (name)
 const char pass[] = "6012950419";    // your network password
 
 // local variables
